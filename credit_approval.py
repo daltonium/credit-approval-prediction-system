@@ -218,7 +218,7 @@ for name, model in trained_models.items():
     plt.title(f'{name} Confusion Matrix')
     plt.xlabel('Predicted')
     plt.ylabel('Actual')
-    plt.show()
+    #plt.show()
 
     # ROC Curve
     if y_proba is not None:
@@ -230,7 +230,7 @@ for name, model in trained_models.items():
         plt.ylabel('True Positive Rate')
         plt.title(f'{name} ROC Curve')
         plt.legend()
-        plt.show()
+        #plt.show()
 
 # 17. Compare All Models
 import pandas as pd
@@ -244,4 +244,4 @@ plt.ylabel('Score')
 plt.title('Model Metric Comparison')
 plt.axhline(0.9, color='red', linestyle='--', label='90% Target')
 plt.legend()
-plt.show()
+#plt.show()

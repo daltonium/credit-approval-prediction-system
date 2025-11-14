@@ -181,7 +181,7 @@ text
 
 ## 👥 Contributors
 
-- **Your Name** - Machine Learning Intern @ Tech Trio
+- **Mohith Dalton Jeyaram** - Project Intern @ Tech Trio
 
 ---
 

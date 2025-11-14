@@ -69,3 +69,54 @@ print(y.value_counts(normalize=True))
 from sklearn.linear_model import LogisticRegression
 model = LogisticRegression(class_weight='balanced')
 # Then fit as usual
+
+# 8. Creating Meaningful Features
+if 'A2' in X_clean.columns and 'A8' in X_clean.columns:
+    X_clean['debt_to_income'] = X_clean['A8'] / (X_clean['A2'] + 1e-5)  # add small constant to avoid zero division
+
+# 9. Feature Selection with Correlation Analysis
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Temporarily add y to X_clean for correlation
+X_y = X_clean.copy()
+X_y['target'] = y.replace({'+': 1, '-': 0}).astype(int)
+
+corr = X_y.corr()['target'].drop('target')
+print("Correlation with target:\n", corr)
+
+# Visualize
+plt.figure(figsize=(10, 4))
+sns.barplot(x=corr.index, y=corr.values)
+plt.xticks(rotation=45)
+plt.title('Feature correlation with target')
+plt.show()
+
+# 10. Feature Importance from Model
+from sklearn.ensemble import RandomForestClassifier
+
+# Fit with class_weight since you already decided that
+rf = RandomForestClassifier(class_weight='balanced', random_state=42)
+rf.fit(X_clean, y.replace({'+': 1, '-': 0}))
+
+importances = rf.feature_importances_
+indices = np.argsort(importances)[::-1]
+
+print("Feature ranking:")
+for f in range(len(indices)):
+    print(f"{f + 1}. {X_clean.columns[indices[f]]}: {importances[indices[f]]:.4f}")
+
+# Visualize the top 10 features
+plt.figure(figsize=(10, 5))
+sns.barplot(x=X_clean.columns[indices][:10], y=importances[indices][:10])
+plt.xticks(rotation=45)
+plt.title('Random Forest Feature Importances')
+plt.show()
+
+# 11. Remove Low-Impact or Redundant Features
+top_features = X_clean.columns[indices][:10]
+X_selected = X_clean[top_features]
+
+# Optionally, overwrite X_clean
+X_clean = X_selected

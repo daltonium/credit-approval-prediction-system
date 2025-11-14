@@ -3,10 +3,13 @@
 from ucimlrepo import fetch_ucirepo
 import pandas as pd
 
+pd.set_option('future.no_silent_downcasting', True)
+
 # Fetch the dataset
 data = fetch_ucirepo(id=27)
 X = data.data.features
 y = data.data.targets
+y_numeric = y.replace({'+': 1, '-': 0}).astype(int)
 
 # Combine features and target for easy viewing
 df = pd.concat([X, y], axis=1)
@@ -98,7 +101,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 # Fit with class_weight since you already decided that
 rf = RandomForestClassifier(class_weight='balanced', random_state=42)
-rf.fit(X_clean, y.replace({'+': 1, '-': 0}))
+rf.fit(X_clean, y_numeric.values.ravel())  
 
 importances = rf.feature_importances_
 indices = np.argsort(importances)[::-1]
@@ -120,3 +123,56 @@ X_selected = X_clean[top_features]
 
 # Optionally, overwrite X_clean
 X_clean = X_selected
+
+# 12. Split Data into Train & Test Sets
+from sklearn.model_selection import train_test_split
+
+# Convert target to numeric
+y_numeric = y.replace({'+': 1, '-': 0}).astype(int)
+
+# Split: 80% train, 20% test
+X_train, X_test, y_train, y_test = train_test_split(
+    X_clean, y_numeric, test_size=0.2, random_state=42, stratify=y_numeric
+)
+
+# 13. Build & Train Models
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from xgboost import XGBClassifier
+
+models = {
+    'Logistic Regression': LogisticRegression(class_weight='balanced', max_iter=1000, random_state=42),
+    'Decision Tree': DecisionTreeClassifier(class_weight='balanced', random_state=42),
+    'Random Forest': RandomForestClassifier(class_weight='balanced', random_state=42),
+    'Gradient Boosting': GradientBoostingClassifier(random_state=42),
+    'XGBoost': XGBClassifier(scale_pos_weight=1, use_label_encoder=False, eval_metric='logloss', random_state=42)
+}
+
+# Train and predict
+def train_and_score(model, X_train, y_train, X_test, y_test):
+    model.fit(X_train, y_train.values.ravel())  
+    score = model.score(X_test, y_test.values.ravel())  
+    print(f"{type(model).__name__} Test Accuracy: {score:.4f}")
+    return model
+
+trained_models = {}
+for name, model in models.items():
+    print(f"\nTraining {name}...")
+    trained_models[name] = train_and_score(model, X_train, y_train, X_test, y_test)
+
+# 14. Hyperparameter Tuning: GridSearchCV Example
+from sklearn.model_selection import GridSearchCV
+
+param_grid = {
+    'n_estimators': [100, 200, 300],
+    'max_depth': [5, 10, 20],
+    'min_samples_split': [2, 5]
+}
+
+grid = GridSearchCV(RandomForestClassifier(class_weight='balanced', random_state=42),
+                    param_grid, cv=3, scoring='accuracy', n_jobs=-1)
+grid.fit(X_train, y_train.values.ravel())
+
+print("Best Params (Random Forest):", grid.best_params_)
+print("Best Score:", grid.best_score_)

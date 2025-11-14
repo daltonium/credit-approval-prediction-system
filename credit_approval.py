@@ -1,3 +1,4 @@
+
 # 1. Load the Dataset
 
 from ucimlrepo import fetch_ucirepo
@@ -174,8 +175,8 @@ grid = GridSearchCV(RandomForestClassifier(class_weight='balanced', random_state
                     param_grid, cv=3, scoring='accuracy', n_jobs=-1)
 grid.fit(X_train, y_train.values.ravel())
 
-print("Best Params (Random Forest):", grid.best_params_)
-print("Best Score:", grid.best_score_)
+#print("Best Params (Random Forest):", grid.best_params_)
+#print("Best Score:", grid.best_score_)
 
 # 15. Import Metric Functions
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix, classification_report, roc_curve
@@ -205,11 +206,11 @@ for name, model in trained_models.items():
         "f1": f1,
         "roc_auc": roc_auc
     }
-    print(f"\nModel: {name}")
+    #print(f"\nModel: {name}")
     roc_auc_str = f"{roc_auc:.4f}" if roc_auc is not None else "N/A"
-    print(f"Accuracy: {accuracy:.4f}, Precision: {precision:.4f}, Recall: {recall:.4f}, F1: {f1:.4f}, ROC-AUC: {roc_auc_str}")
+    #print(f"Accuracy: {accuracy:.4f}, Precision: {precision:.4f}, Recall: {recall:.4f}, F1: {f1:.4f}, ROC-AUC: {roc_auc_str}")
 
-    print(classification_report(y_test, y_pred))
+    #print(classification_report(y_test, y_pred))
 
     # Confusion Matrix
     cm = confusion_matrix(y_test, y_pred)
@@ -235,8 +236,8 @@ for name, model in trained_models.items():
 # 17. Compare All Models
 import pandas as pd
 results_df = pd.DataFrame(results).T  # .T to get models as rows
-print("\nModel Comparison:")
-print(results_df)
+#print("\nModel Comparison:")
+#print(results_df)
 
 # Optional: Bar plot of key metrics
 results_df[["accuracy", "f1", "roc_auc"]].plot(kind='bar', figsize=(10, 5))
@@ -275,3 +276,82 @@ plt.legend()
 # else:
 #     print('No identifiable demographic column present. Check the data dictionary and confirm your column names.')
 
+# 19. Choose Your Best Model
+best_model = trained_models['XGBoost']  
+
+# 20.  Collect Feature Names
+input_features = list(X_clean.columns)
+#print("Input features needed:", input_features)
+
+# 21. Build the User Input Function
+input_features = list(X_clean.columns)  # The 10 columns actually used by the model
+#print("Input features needed:", input_features)
+
+def get_user_input():
+    user_data = []
+    print("Please enter applicant details:")
+    for feat in input_features:
+        val = input(f"{feat}: ")
+        try:
+            val = float(val)
+        except ValueError:
+            pass
+        user_data.append(val)
+    return user_data
+
+# Store label encoders when encoding categories earlier
+encoders = {}
+categorical_cols = [col for col in X_clean.columns if col in data_cat.columns]
+for col in categorical_cols:
+    le = LabelEncoder()
+    X_clean[col] = le.fit_transform(X_clean[col].astype(str))
+    encoders[col] = le
+
+input_features = list(X_clean.columns)
+categorical_cols = [c for c in input_features if c in data_cat.columns]
+numerical_cols = [c for c in input_features if c in data_num.columns or c == 'debt_to_income']
+
+# Prompt user for input matching model's feature order
+user_data = []
+#print("Please enter applicant details:")
+for feat in input_features:
+    val = input(f"{feat}: ")
+    if feat in categorical_cols:
+        val = encoders[feat].transform([val])[0]  # encode categorical
+    else:
+        val = float(val)
+    user_data.append(val)
+
+user_df = pd.DataFrame([user_data], columns=input_features)
+
+# Scale ONLY numerical features
+user_df[numerical_cols] = scaler.transform(user_df[numerical_cols])
+
+# Predict using the loaded/trained model
+prediction = best_model.predict(user_df)
+if prediction[0] == 1:
+    print("Result: APPROVED")
+else:
+    print("Result: DENIED")
+
+# 22. Prepare User Data for Prediction
+import numpy as np
+
+user_data = get_user_input()
+# Convert to DataFrame for consistency
+user_df = pd.DataFrame([user_data], columns=input_features)
+
+# If you used StandardScaler for numerical columns
+user_df[input_features] = scaler.transform(user_df[input_features])
+
+# If you used LabelEncoder for categorical columns (optional, adjust as needed)
+# for col in categorical_cols:
+#     user_df[col] = le.transform([user_df[col].astype(str)])[0]
+
+# Predict approval
+prediction = best_model.predict(user_df)
+
+if prediction[0] == 1:
+    print("Result: APPROVED")
+else:
+    print("Result: DENIED")

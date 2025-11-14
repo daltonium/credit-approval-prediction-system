@@ -2,36 +2,28 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.metrics import (
-    accuracy_score, precision_score, recall_score, f1_score, roc_auc_score,
-    confusion_matrix, roc_curve, classification_report
-)
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix, roc_curve, classification_report
 import joblib
 
-# 1. LOAD TEST DATA
-X_test = pd.read_csv('X_test_for_eval.csv')
-y_test = pd.read_csv('y_test_for_eval.csv').squeeze()  # Series
+X_test = pd.read_csv('../splits/X_test_for_eval.csv')
+y_test = pd.read_csv('../splits/y_test_for_eval.csv').squeeze()
 
-# 2. LOAD TRAINED MODELS
 model_names = ['LogisticRegression', 'DecisionTree', 'RandomForest', 'GradientBoosting', 'XGBoost']
-models = {name: joblib.load(f'{name}_model.joblib') for name in model_names}
+models = {name: joblib.load(f'../models/{name}_model.joblib') for name in model_names}
 
-# 3. EVALUATE EACH MODEL
 results = {}
 for name, model in models.items():
     print(f'\nEvaluating {name}...')
     y_pred = model.predict(X_test)
-    if hasattr(model, "predict_proba"):
+    if hasattr(model, 'predict_proba'):
         y_proba = model.predict_proba(X_test)[:,1]
-    else:  # Some classifiers may use .decision_function()
-        y_proba = y_pred  # fallback - ROC/AUC will not be exact
-
+    else:
+        y_proba = y_pred
     accuracy = accuracy_score(y_test, y_pred)
     precision = precision_score(y_test, y_pred)
     recall = recall_score(y_test, y_pred)
     f1 = f1_score(y_test, y_pred)
     roc_auc = roc_auc_score(y_test, y_proba)
-
     results[name] = {
         'accuracy': accuracy,
         'precision': precision,
@@ -41,7 +33,6 @@ for name, model in models.items():
     }
     print(f'Accuracy: {accuracy:.4f}, Precision: {precision:.4f}, Recall: {recall:.4f}, F1: {f1:.4f}, ROC-AUC: {roc_auc:.4f}')
     print(classification_report(y_test, y_pred))
-    # Confusion Matrix
     cm = confusion_matrix(y_test, y_pred)
     plt.figure(figsize=(4,3))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
@@ -49,7 +40,6 @@ for name, model in models.items():
     plt.xlabel('Predicted')
     plt.ylabel('Actual')
     plt.show()
-    # ROC Curve
     fpr, tpr, _ = roc_curve(y_test, y_proba)
     plt.plot(fpr, tpr, label=f'{name} (AUC={roc_auc:.2f})')
 plt.plot([0, 1], [0, 1], 'k--')
@@ -59,7 +49,6 @@ plt.title('ROC Curves')
 plt.legend()
 plt.show()
 
-# 4. MODEL COMPARISON TABLE
 results_df = pd.DataFrame(results).T
 print('\nModel Comparison:')
 print(results_df)

@@ -15,23 +15,57 @@ for file in os.listdir('models'):
         col = file.replace('label_encoder_', '').replace('.joblib', '')
         available_encoders[col] = joblib.load(f'models/{file}')
 
-# Feature mapping (UCI Credit Approval dataset - adjust based on your data)
-# Map technical column names to user-friendly descriptions
+# Feature mapping with meaningful descriptions
 FEATURE_MAP = {
     '1': {'name': 'Age', 'type': 'numerical', 'description': 'Age in years (e.g., 25, 30, 45)'},
     '2': {'name': 'Years Employed', 'type': 'numerical', 'description': 'Years at current job (e.g., 0.5, 2, 10)'},
-    '3': {'name': 'Marital Status', 'type': 'categorical', 'description': 'u=unmarried, y=yes, l=living together'},
-    '4': {'name': 'Bank Customer Type', 'type': 'categorical', 'description': 'g=good, gg=very good, p=poor'},
-    '5': {'name': 'Education Level', 'type': 'categorical', 'description': 'e.g., aa, c, cc, d, e, ff, etc.'},
-    '6': {'name': 'Ethnicity', 'type': 'categorical', 'description': 'e.g., bb, dd, ff, h, j, n, o, v, z'},
+    '3': {'name': 'Marital Status', 'type': 'categorical', 'description': 'u=unmarried, y=married, l=living together'},
+    '4': {'name': 'Bank Customer Type', 'type': 'categorical', 'description': 'g=standard, gg=premium, p=basic'},
+    '5': {
+        'name': 'Education Level', 
+        'type': 'categorical', 
+        'description': 'Choose your highest education:',
+        'mappings': {
+            'aa': 'High School',
+            'c': 'Associate Degree',
+            'cc': 'Bachelor\'s Degree',
+            'd': 'Some College',
+            'e': 'Master\'s Degree',
+            'ff': 'Professional Degree',
+            'i': 'Vocational Training',
+            'j': 'Doctorate',
+            'k': 'Technical Certification',
+            'm': 'Trade School',
+            'q': 'Less than High School',
+            'r': 'GED',
+            'w': 'Graduate Certificate',
+            'x': 'Other'
+        }
+    },
+    '6': {
+        'name': 'Occupation Type', 
+        'type': 'categorical', 
+        'description': 'Select your occupation category:',
+        'mappings': {
+            'bb': 'Professional/Technical',
+            'dd': 'Management/Executive',
+            'ff': 'Sales',
+            'h': 'Administrative/Clerical',
+            'j': 'Service Industry',
+            'n': 'Construction/Trades',
+            'o': 'Healthcare',
+            'v': 'Education/Teaching',
+            'z': 'Other/Retired'
+        }
+    },
     '7': {'name': 'Years at Current Address', 'type': 'numerical', 'description': 'Years (e.g., 0, 2, 5, 10)'},
     '8': {'name': 'Employment Status', 'type': 'categorical', 'description': 't=employed, f=unemployed'},
-    '9': {'name': 'Credit History', 'type': 'categorical', 'description': 't=good, f=bad'},
+    '9': {'name': 'Credit History', 'type': 'categorical', 'description': 't=good, f=poor'},
     '10': {'name': 'Driver License', 'type': 'numerical', 'description': '1=yes, 0=no'},
     '11': {'name': 'Citizenship', 'type': 'categorical', 'description': 't=citizen, f=non-citizen'},
-    '12': {'name': 'Credit Type', 'type': 'categorical', 'description': 'g=gold, p=platinum, s=silver'},
+    '12': {'name': 'Credit Type Requested', 'type': 'categorical', 'description': 'g=standard, p=platinum, s=secured'},
     '13': {'name': 'Monthly Income', 'type': 'numerical', 'description': 'Monthly income in dollars (e.g., 2000, 3500, 5000)'},
-    '14': {'name': 'Debt Amount', 'type': 'numerical', 'description': 'Total debt in dollars (e.g., 0, 500, 2000)'}
+    '14': {'name': 'Total Debt', 'type': 'numerical', 'description': 'Total debt in dollars (e.g., 0, 500, 2000)'}
 }
 
 def get_user_friendly_input():
@@ -48,24 +82,35 @@ def get_user_friendly_input():
     
     for feat in input_features:
         if feat not in FEATURE_MAP:
-            # Skip unknown features
             user_data[feat] = 0
             continue
             
         feature_info = FEATURE_MAP[feat]
         print(f"📋 {feature_info['name']}")
-        print(f"   Description: {feature_info['description']}")
+        print(f"   {feature_info['description']}")
         
         if feature_info['type'] == 'categorical' and feat in available_encoders:
             valid_values = list(available_encoders[feat].classes_)
-            print(f"   Valid options: {', '.join(map(str, valid_values))}")
-            val = input(f"   Enter value: ").strip()
+            
+            # Check if we have meaningful mappings
+            if 'mappings' in feature_info:
+                mappings = feature_info['mappings']
+                print("\n   Options:")
+                for code, label in mappings.items():
+                    if code in valid_values:
+                        print(f"      {code} = {label}")
+                print()
+            else:
+                print(f"   Valid options: {', '.join(map(str, valid_values))}")
+            
+            val = input(f"   Enter code: ").strip()
             
             try:
                 val = available_encoders[feat].transform([val])[0]
             except:
-                print(f"   ⚠️  Invalid input! Using default: {valid_values[0]}")
-                val = available_encoders[feat].transform([valid_values[0]])[0]
+                default = valid_values[0]
+                print(f"   ⚠️  Invalid input! Using default: {default}")
+                val = available_encoders[feat].transform([default])[0]
         else:
             val = input(f"   Enter value: ").strip()
             try:

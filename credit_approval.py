@@ -60,3 +60,12 @@ from sklearn.preprocessing import StandardScaler
 
 scaler = StandardScaler()
 X_clean[data_num.columns] = scaler.fit_transform(X_clean[data_num.columns])
+
+# 7. Check Class Balance
+print(y.value_counts())
+print(y.value_counts(normalize=True))
+
+#8. Weighted Loss Functions
+from sklearn.linear_model import LogisticRegression
+model = LogisticRegression(class_weight='balanced')
+# Then fit as usual

@@ -176,3 +176,72 @@ grid.fit(X_train, y_train.values.ravel())
 
 print("Best Params (Random Forest):", grid.best_params_)
 print("Best Score:", grid.best_score_)
+
+# 15. Import Metric Functions
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix, classification_report, roc_curve
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# 16. Make Predictions and Collect Probabilities (Test Set)
+results = {}
+for name, model in trained_models.items():
+    y_pred = model.predict(X_test)
+    # For ROC AUC, get probability estimates if available
+    if hasattr(model, "predict_proba"):
+        y_proba = model.predict_proba(X_test)[:, 1]
+    else:
+        y_proba = None
+
+    accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred)
+    roc_auc = roc_auc_score(y_test, y_proba) if y_proba is not None else None
+
+    results[name] = {
+        "accuracy": accuracy,
+        "precision": precision,
+        "recall": recall,
+        "f1": f1,
+        "roc_auc": roc_auc
+    }
+    print(f"\nModel: {name}")
+    roc_auc_str = f"{roc_auc:.4f}" if roc_auc is not None else "N/A"
+    print(f"Accuracy: {accuracy:.4f}, Precision: {precision:.4f}, Recall: {recall:.4f}, F1: {f1:.4f}, ROC-AUC: {roc_auc_str}")
+
+    print(classification_report(y_test, y_pred))
+
+    # Confusion Matrix
+    cm = confusion_matrix(y_test, y_pred)
+    plt.figure(figsize=(4, 3))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+    plt.title(f'{name} Confusion Matrix')
+    plt.xlabel('Predicted')
+    plt.ylabel('Actual')
+    plt.show()
+
+    # ROC Curve
+    if y_proba is not None:
+        fpr, tpr, _ = roc_curve(y_test, y_proba)
+        plt.figure(figsize=(5, 4))
+        plt.plot(fpr, tpr, label=f'{name} (AUC = {roc_auc:.2f})')
+        plt.plot([0, 1], [0, 1], 'k--')
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title(f'{name} ROC Curve')
+        plt.legend()
+        plt.show()
+
+# 17. Compare All Models
+import pandas as pd
+results_df = pd.DataFrame(results).T  # .T to get models as rows
+print("\nModel Comparison:")
+print(results_df)
+
+# Optional: Bar plot of key metrics
+results_df[["accuracy", "f1", "roc_auc"]].plot(kind='bar', figsize=(10, 5))
+plt.ylabel('Score')
+plt.title('Model Metric Comparison')
+plt.axhline(0.9, color='red', linestyle='--', label='90% Target')
+plt.legend()
+plt.show()

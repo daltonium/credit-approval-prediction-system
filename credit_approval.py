@@ -245,3 +245,33 @@ plt.title('Model Metric Comparison')
 plt.axhline(0.9, color='red', linestyle='--', label='90% Target')
 plt.legend()
 #plt.show()
+
+# 18. Fairness Check: Evaluating for Bias
+# Assume 'A1' is gender: 'a' and 'b' (check your data dictionary)
+# Use X_test BEFORE label encoding for clarity, or map encoded values back
+# if 'A1' in X_test.columns:
+#     # Map label-encoded values back, if needed, e.g. 0 <-> 'a', 1 <-> 'b'
+#     group_key = 'A1'
+#     group_vals = X_test[group_key]
+#     # Get predictions from your best model, e.g. XGBoost
+#     y_pred = trained_models['XGBoost'].predict(X_test)
+    
+#     # Group by demographic value and compute approval rate
+#     df_fair = pd.DataFrame({
+#         'group': group_vals,
+#         'true': y_test.values.ravel(),
+#         'pred': y_pred
+#     })
+#     print('Approval rates by group:')
+#     print(df_fair.groupby('group')['pred'].mean())
+#     print('Actual approval rates by group:')
+#     print(df_fair.groupby('group')['true'].mean())
+    
+#     # Or compare precision/recall by group
+#     for val in df_fair['group'].unique():
+#         mask = df_fair['group'] == val
+#         print(f"\nGroup {val} classification report:")
+#         print(classification_report(df_fair['true'][mask], df_fair['pred'][mask]))
+# else:
+#     print('No identifiable demographic column present. Check the data dictionary and confirm your column names.')
+
